@@ -707,3 +707,55 @@ function escapeHtml(
         );
 
 }
+
+/* ==============================
+   카카오맵
+============================== */
+
+let kakaoMap = null;
+
+function initKakaoMap() {
+
+    const mapContainer =
+        document.getElementById("map");
+
+    if (!mapContainer) {
+        return;
+    }
+
+    const mapOption = {
+        center: new kakao.maps.LatLng(
+            35.1796,
+            129.0756
+        ),
+        level: 8
+    };
+
+    kakaoMap =
+        new kakao.maps.Map(
+            mapContainer,
+            mapOption
+        );
+
+}
+
+window.addEventListener(
+    "load",
+    () => {
+
+        if (
+            typeof kakao === "undefined" ||
+            !kakao.maps
+        ) {
+
+            console.error(
+                "카카오맵 SDK가 로드되지 않았습니다."
+            );
+
+            return;
+        }
+
+        initKakaoMap();
+
+    }
+);
