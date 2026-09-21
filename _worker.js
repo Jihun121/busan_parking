@@ -4,6 +4,123 @@ export default {
 
         const url = new URL(request.url);
 
+        if (url.pathname === "/api/geocode") {
+
+            const kakaoKey =
+                env.KAKAO_REST_API_KEY;
+
+            if (!kakaoKey) {
+
+                return jsonResponse(
+                    {
+                        success: false,
+                        message:
+                            "KAKAO_REST_API_KEY가 설정되지 않았습니다."
+                    },
+                    500
+                );
+
+            }
+
+            const address =
+                url.searchParams.get("address");
+
+
+            if (!address) {
+
+                return jsonResponse(
+                    {
+                        success: false,
+                        message:
+                            "address 파라미터가 필요합니다."
+                    },
+                    400
+                );
+
+            }
+
+
+            try {
+
+                const kakaoUrl =
+                    new URL(
+                        "https://dapi.kakao.com/v2/local/search/address.json"
+                    );
+
+
+                kakaoUrl.searchParams.set(
+                    "query",
+                    address
+                );
+
+
+                const response =
+                    await fetch(
+                        kakaoUrl.toString(),
+                        {
+                            headers: {
+                                "Authorization":
+                                    `KakaoAK ${kakaoKey}`
+                            }
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Kakao Geocode Response:",
+                    data
+                );
+
+
+                if (!response.ok) {
+
+                    return jsonResponse(
+                        {
+                            success: false,
+                            message:
+                                "카카오 주소 검색 API 호출 실패",
+                            status:
+                                response.status,
+                            data
+                        },
+                        502
+                    );
+
+                }
+
+
+                return jsonResponse(
+                    data,
+                    200
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Kakao Geocode Error:",
+                    error
+                );
+
+
+                return jsonResponse(
+                    {
+                        success: false,
+                        message:
+                            "주소 좌표 변환 중 오류가 발생했습니다.",
+                        error:
+                            error.message
+                    },
+                    500
+                );
+
+            }
+
+        }
 
         /*
          * 부산 공영주차장 API
