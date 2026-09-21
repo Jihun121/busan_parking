@@ -917,10 +917,18 @@ async function testParkingMarker() {
 
 let parkingMarkers = [];
 const geocodeCache = new Map();
+let markerStats = {
+    total: 0,
+    success: 0,
+    noAddress: 0,
+    noResult: 0,
+    invalidCoordinate: 0,
+    apiError: 0
+};
 
 async function geocodeAddress(address) {
 
-    // 이미 검색한 주소라면 기존 결과 사용
+    // 캐시에 있는 경우
     if (geocodeCache.has(address)) {
         return geocodeCache.get(address);
     }
@@ -933,15 +941,24 @@ async function geocodeAddress(address) {
             );
 
         if (!response.ok) {
+
             console.log(
                 "Geocode HTTP 오류:",
                 response.status,
                 address
             );
 
-            geocodeCache.set(address, null);
+            const result = {
+                success: false,
+                reason: "apiError"
+            };
 
-            return null;
+            geocodeCache.set(
+                address,
+                result
+            );
+
+            return result;
         }
 
         const data =
@@ -957,9 +974,17 @@ async function geocodeAddress(address) {
                 address
             );
 
-            geocodeCache.set(address, null);
+            const result = {
+                success: false,
+                reason: "noResult"
+            };
 
-            return null;
+            geocodeCache.set(
+                address,
+                result
+            );
+
+            return result;
         }
 
         const document =
@@ -976,23 +1001,31 @@ async function geocodeAddress(address) {
             !Number.isFinite(y)
         ) {
 
-            geocodeCache.set(address, null);
+            const result = {
+                success: false,
+                reason: "invalidCoordinate"
+            };
 
-            return null;
+            geocodeCache.set(
+                address,
+                result
+            );
+
+            return result;
         }
 
-        const coordinate = {
-            x,
-            y
+        const result = {
+            success: true,
+            x: x,
+            y: y
         };
 
-        // 성공한 좌표 저장
         geocodeCache.set(
             address,
-            coordinate
+            result
         );
 
-        return coordinate;
+        return result;
 
     }
     catch (error) {
@@ -1003,16 +1036,30 @@ async function geocodeAddress(address) {
             error
         );
 
+        const result = {
+            success: false,
+            reason: "apiError"
+        };
+
         geocodeCache.set(
             address,
-            null
+            result
         );
 
-        return null;
+        return result;
     }
 }
 
 async function loadParkingMarkers() {
+
+    markerStats = {
+        total: parkingData.length,
+        success: 0,
+        noAddress: 0,
+        noResult: 0,
+        invalidCoordinate: 0,
+        apiError: 0
+    };
 
     if (!kakaoMap) {
         console.log("카카오 지도가 아직 준비되지 않았습니다.");
@@ -1074,6 +1121,8 @@ async function loadParkingMarkers() {
                 parking.pkNam
             );
 
+            markerStats.noAddress++;
+
             continue;
         }
 
@@ -1082,12 +1131,38 @@ async function loadParkingMarkers() {
             const coordinate =
                 await geocodeAddress(address);
 
-            if (!coordinate) {
+            if (!coordinate.success) {
+
+                if (
+                    coordinate.reason ===
+                    "noResult"
+                ) {
+
+                    markerStats.noResult++;
+
+                }
+                else if (
+                    coordinate.reason ===
+                    "invalidCoordinate"
+                ) {
+
+                    markerStats.invalidCoordinate++;
+
+                }
+                else if (
+                    coordinate.reason ===
+                    "apiError"
+                ) {
+
+                    markerStats.apiError++;
+
+                }
 
                 console.log(
                     "좌표 변환 실패:",
                     parking.pkNam,
-                    address
+                    address,
+                    coordinate.reason
                 );
 
                 continue;
@@ -1098,19 +1173,6 @@ async function loadParkingMarkers() {
 
             const y =
                 coordinate.y;
-
-            if (
-                !Number.isFinite(x) ||
-                !Number.isFinite(y)
-            ) {
-
-                console.log(
-                    "잘못된 좌표:",
-                    parking.pkNam
-                );
-
-                continue;
-            }
 
             const position =
                 new kakao.maps.LatLng(
@@ -1127,6 +1189,8 @@ async function loadParkingMarkers() {
             parkingMarkers.push(marker);
 
             bounds.extend(position);
+
+            markerStats.success++;
 
             successCount++;
 
@@ -1234,6 +1298,8 @@ async function loadParkingMarkers() {
     console.log(
         `마커 생성 완료: ${successCount}개`
     );
+
+    renderMarkerStats();
 }
 
 
@@ -1249,4 +1315,72 @@ function clearParkingMarkers() {
     );
 
     parkingMarkers = [];
+}
+
+function renderMarkerStats() {
+
+    const container =
+        document.getElementById(
+            "markerStats"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="marker-stats-title">
+            📊 지도 마커 처리 결과
+        </div>
+
+        <div class="marker-stats-grid">
+
+            <div class="marker-stat-item">
+                <span class="marker-stat-label">
+                    전체 주차장
+                </span>
+                <strong class="marker-stat-value">
+                    ${markerStats.total}
+                </strong>
+            </div>
+
+            <div class="marker-stat-item">
+                <span class="marker-stat-label">
+                    📍 마커 생성
+                </span>
+                <strong class="marker-stat-value">
+                    ${markerStats.success}
+                </strong>
+            </div>
+
+            <div class="marker-stat-item">
+                <span class="marker-stat-label">
+                    주소 없음
+                </span>
+                <strong class="marker-stat-value">
+                    ${markerStats.noAddress}
+                </strong>
+            </div>
+
+            <div class="marker-stat-item">
+                <span class="marker-stat-label">
+                    Kakao 검색 실패
+                </span>
+                <strong class="marker-stat-value">
+                    ${markerStats.noResult}
+                </strong>
+            </div>
+
+            <div class="marker-stat-item">
+                <span class="marker-stat-label">
+                    API/기타 오류
+                </span>
+                <strong class="marker-stat-value">
+                    ${markerStats.apiError +
+        markerStats.invalidCoordinate}
+                </strong>
+            </div>
+
+        </div>
+    `;
 }

@@ -653,3 +653,57 @@ button {
     }
 
 }
+
+/* ==============================
+   지도 마커 처리 결과
+============================== */
+
+.marker-stats {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.marker-stats-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.marker-stats-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(5, 1fr);
+    gap: 10px;
+}
+
+.marker-stat-item {
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.marker-stat-label {
+    display: block;
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 3px;
+}
+
+.marker-stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+
+    .marker-stats-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
