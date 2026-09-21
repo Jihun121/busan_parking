@@ -775,9 +775,20 @@ async function testParkingMarker() {
 
     const parking = parkingData[0];
 
+    const roadAddress =
+        String(parking.doroAddr || "").trim();
+
+    const jibunAddress =
+        String(parking.jibunAddr || "").trim();
+
     const address =
-        parking.doroAddr ||
-        parking.jibunAddr;
+        roadAddress || jibunAddress;
+
+    console.log("===== 테스트 주차장 =====");
+    console.log("주차장명:", parking.pkNam);
+    console.log("도로명 주소:", roadAddress);
+    console.log("지번 주소:", jibunAddress);
+    console.log("사용할 주소:", address);
 
     console.log("테스트 주차장:", parking);
     console.log("주소:", address);
@@ -812,6 +823,12 @@ async function testParkingMarker() {
             console.log(
                 "해당 주차장의 좌표를 찾지 못했습니다."
             );
+
+            console.log(
+                "Kakao Geocode 전체 응답:",
+                data
+            );
+
             return;
         }
 
