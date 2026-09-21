@@ -781,17 +781,26 @@ async function testParkingMarker() {
     const jibunAddress =
         String(parking.jibunAddr || "").trim();
 
+    const validRoadAddress =
+        roadAddress !== "-" &&
+        roadAddress !== "";
+
+    const validJibunAddress =
+        jibunAddress !== "-" &&
+        jibunAddress !== "";
+
     const address =
-        roadAddress || jibunAddress;
+        validRoadAddress
+            ? roadAddress
+            : validJibunAddress
+                ? jibunAddress
+                : "";
 
     console.log("===== 테스트 주차장 =====");
     console.log("주차장명:", parking.pkNam);
     console.log("도로명 주소:", roadAddress);
     console.log("지번 주소:", jibunAddress);
     console.log("사용할 주소:", address);
-
-    console.log("테스트 주차장:", parking);
-    console.log("주소:", address);
 
     if (!address) {
         console.log("주소가 없습니다.");
