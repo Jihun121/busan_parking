@@ -108,6 +108,8 @@ async function loadParking() {
 
         renderParking();
 
+        testParkingMarker();
+
         status.textContent =
             "조회 성공";
 
@@ -759,3 +761,126 @@ window.addEventListener(
 
     }
 );
+
+/* ==============================
+   주차장 테스트 마커
+============================== */
+
+async function testParkingMarker() {
+
+    if (!parkingData.length) {
+        console.log("주차장 데이터가 없습니다.");
+        return;
+    }
+
+    const parking = parkingData[0];
+
+    const address =
+        parking.doroAddr ||
+        parking.jibunAddr;
+
+    console.log("테스트 주차장:", parking);
+    console.log("주소:", address);
+
+    if (!address) {
+        console.log("주소가 없습니다.");
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/geocode?address=${encodeURIComponent(address)}`
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                `Geocode HTTP 오류: ${response.status}`
+            );
+        }
+
+        const data =
+            await response.json();
+
+        console.log("좌표 변환 결과:", data);
+
+        if (
+            !data.documents ||
+            data.documents.length === 0
+        ) {
+            console.log(
+                "해당 주차장의 좌표를 찾지 못했습니다."
+            );
+            return;
+        }
+
+        const document =
+            data.documents[0];
+
+        const x =
+            Number(document.x);
+
+        const y =
+            Number(document.y);
+
+        console.log("X:", x);
+        console.log("Y:", y);
+
+        const position =
+            new kakao.maps.LatLng(
+                y,
+                x
+            );
+
+        const marker =
+            new kakao.maps.Marker({
+                position: position,
+                map: kakaoMap
+            });
+
+        kakaoMap.setCenter(position);
+
+        const infoWindow =
+            new kakao.maps.InfoWindow({
+                content: `
+                    <div style="
+                        padding:10px;
+                        font-size:14px;
+                        white-space:nowrap;
+                    ">
+                        ${escapeHtml(
+                    parking.pkNam ||
+                    "주차장"
+                )}
+                    </div>
+                `
+            });
+
+        kakao.maps.event.addListener(
+            marker,
+            "click",
+            () => {
+
+                infoWindow.open(
+                    kakaoMap,
+                    marker
+                );
+
+            }
+        );
+
+        console.log(
+            "주차장 테스트 마커 표시 성공"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "주차장 마커 생성 실패:",
+            error
+        );
+
+    }
+}
