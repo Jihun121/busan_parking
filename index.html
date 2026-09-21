@@ -33,19 +33,107 @@
     <main class="container">
 
 
-        <div class="toolbar">
-
-            <button id="loadButton">
-                주차장 정보 조회
-            </button>
-
-            <span id="status">
-                조회 버튼을 눌러주세요.
-            </span>
-
-        </div>
+        <!-- 조회 영역 -->
+        <section class="control-panel">
 
 
+            <div class="toolbar">
+
+                <button id="loadButton" class="primary-button">
+                    🔄 주차장 정보 조회
+                </button>
+
+                <span id="status">
+                    조회 버튼을 눌러주세요.
+                </span>
+
+            </div>
+
+
+            <!-- 검색 -->
+            <div class="filter-area">
+
+
+                <div class="search-box">
+
+                    <label for="searchInput">
+                        주차장 검색
+                    </label>
+
+                    <input id="searchInput" type="text" placeholder="주차장명 또는 주소를 입력하세요">
+
+                </div>
+
+
+                <!-- 구/군 -->
+                <div class="filter-box">
+
+                    <label for="districtSelect">
+                        지역
+                    </label>
+
+                    <select id="districtSelect">
+
+                        <option value="all">
+                            전체 지역
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- 상태 -->
+                <div class="filter-box">
+
+                    <label for="statusSelect">
+                        주차 상태
+                    </label>
+
+                    <select id="statusSelect">
+
+                        <option value="all">
+                            전체 상태
+                        </option>
+
+                        <option value="good">
+                            🟢 여유
+                        </option>
+
+                        <option value="normal">
+                            🟡 보통
+                        </option>
+
+                        <option value="busy">
+                            🔴 혼잡
+                        </option>
+
+                        <option value="unknown">
+                            ⚪ 정보 없음
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- 검색 결과 정보 -->
+            <div class="result-summary">
+
+                <span id="resultCount">
+                    검색 결과 0개
+                </span>
+
+            </div>
+
+
+        </section>
+
+
+        <!-- 주차장 목록 -->
         <section id="parkingList" class="parking-list">
 
             <div class="empty">

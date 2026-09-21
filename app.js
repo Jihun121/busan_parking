@@ -1,6 +1,24 @@
-const loadButton = document.getElementById("loadButton");
-const status = document.getElementById("status");
-const parkingList = document.getElementById("parkingList");
+const loadButton =
+    document.getElementById("loadButton");
+
+const status =
+    document.getElementById("status");
+
+const parkingList =
+    document.getElementById("parkingList");
+
+const searchInput =
+    document.getElementById("searchInput");
+
+const districtSelect =
+    document.getElementById("districtSelect");
+
+const statusSelect =
+    document.getElementById("statusSelect");
+
+const resultCount =
+    document.getElementById("resultCount");
+
 
 let parkingData = [];
 
@@ -8,9 +26,42 @@ let parkingData = [];
 /*
  * 주차장 정보 조회
  */
-loadButton.addEventListener("click", loadParking);
+loadButton.addEventListener(
+    "click",
+    loadParking
+);
 
 
+/*
+ * 검색
+ */
+searchInput.addEventListener(
+    "input",
+    renderParkingList
+);
+
+
+/*
+ * 지역 필터
+ */
+districtSelect.addEventListener(
+    "change",
+    renderParkingList
+);
+
+
+/*
+ * 상태 필터
+ */
+statusSelect.addEventListener(
+    "change",
+    renderParkingList
+);
+
+
+/*
+ * 주차장 데이터 조회
+ */
 async function loadParking() {
 
     loadButton.disabled = true;
@@ -46,16 +97,10 @@ async function loadParking() {
         );
 
 
-        /*
-         * API 응답 데이터 추출
-         */
         parkingData =
             data.response?.body?.items?.item ?? [];
 
 
-        /*
-         * 데이터가 배열이 아닌 경우
-         */
         if (!Array.isArray(parkingData)) {
 
             parkingData =
@@ -64,18 +109,20 @@ async function loadParking() {
         }
 
 
-        console.log(
-            `주차장 ${parkingData.length}개`,
-            parkingData
-        );
+        /*
+         * 지역 목록 생성
+         */
+        createDistrictOptions();
+
+
+        /*
+         * 목록 출력
+         */
+        renderParkingList();
 
 
         status.textContent =
-            `총 ${parkingData.length}개 주차장`;
-
-
-        renderParkingList();
-
+            `전체 ${parkingData.length}개 주차장`;
 
     }
     catch (error) {
@@ -95,11 +142,17 @@ async function loadParking() {
 
                 <br><br>
 
-                ${escapeHtml(error.message)}
+                ${escapeHtml(
+            error.message
+        )}
 
             </div>
 
         `;
+
+
+        resultCount.textContent =
+            "검색 결과 0개";
 
     }
     finally {
@@ -112,17 +165,126 @@ async function loadParking() {
 
 
 /*
+ * 구/군 목록 생성
+ */
+function createDistrictOptions() {
+
+    const districts =
+        new Set();
+
+
+    parkingData.forEach(
+        parking => {
+
+            const address =
+                parking.doroAddr ||
+                parking.jibunAddr ||
+                "";
+
+
+            const district =
+                extractDistrict(address);
+
+
+            if (district) {
+
+                districts.add(district);
+
+            }
+
+        }
+    );
+
+
+    const sortedDistricts =
+        [...districts].sort(
+            (a, b) =>
+                a.localeCompare(
+                    b,
+                    "ko"
+                )
+        );
+
+
+    districtSelect.innerHTML = `
+
+        <option value="all">
+            전체 지역
+        </option>
+
+    `;
+
+
+    sortedDistricts.forEach(
+        district => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                district;
+
+            option.textContent =
+                district;
+
+
+            districtSelect.appendChild(
+                option
+            );
+
+        }
+    );
+
+}
+
+
+/*
+ * 주소에서 구/군 추출
+ *
+ * 부산광역시 중구 ...
+ * 부산광역시 해운대구 ...
+ *
+ * → 중구
+ * → 해운대구
+ */
+function extractDistrict(address) {
+
+    const match =
+        String(address).match(
+            /부산광역시\s+([가-힣]+(?:구|군))/
+        );
+
+
+    return match
+        ? match[1]
+        : "";
+
+}
+
+
+/*
  * 주차장 목록 출력
  */
 function renderParkingList() {
 
-    if (parkingData.length === 0) {
+    const filteredData =
+        getFilteredParking();
+
+
+    resultCount.textContent =
+        `검색 결과 ${filteredData.length}개`;
+
+
+    if (filteredData.length === 0) {
 
         parkingList.innerHTML = `
 
             <div class="empty">
 
-                주차장 데이터가 없습니다.
+                조건에 맞는 주차장이 없습니다.
 
             </div>
 
@@ -134,7 +296,7 @@ function renderParkingList() {
 
 
     parkingList.innerHTML =
-        parkingData
+        filteredData
             .map(createParkingCard)
             .join("");
 
@@ -142,12 +304,123 @@ function renderParkingList() {
 
 
 /*
- * 주차장 카드 생성
+ * 필터 적용
+ */
+function getFilteredParking() {
+
+    const keyword =
+        searchInput.value
+            .trim()
+            .toLowerCase();
+
+
+    const selectedDistrict =
+        districtSelect.value;
+
+
+    const selectedStatus =
+        statusSelect.value;
+
+
+    return parkingData.filter(
+        parking => {
+
+            const name =
+                parking.pkNam || "";
+
+
+            const address =
+                parking.doroAddr ||
+                parking.jibunAddr ||
+                "";
+
+
+            /*
+             * 검색
+             */
+            const matchesKeyword =
+                !keyword ||
+                name
+                    .toLowerCase()
+                    .includes(keyword) ||
+                address
+                    .toLowerCase()
+                    .includes(keyword);
+
+
+            if (!matchesKeyword) {
+
+                return false;
+
+            }
+
+
+            /*
+             * 지역
+             */
+            const district =
+                extractDistrict(address);
+
+
+            if (
+                selectedDistrict !== "all" &&
+                district !== selectedDistrict
+            ) {
+
+                return false;
+
+            }
+
+
+            /*
+             * 상태
+             */
+            const total =
+                parseNumber(
+                    parking.pkCnt
+                );
+
+
+            const available =
+                parseNumber(
+                    parking.currava
+                );
+
+
+            const parkingStatus =
+                getParkingStatus(
+                    total,
+                    available
+                );
+
+
+            if (
+                selectedStatus !== "all" &&
+                parkingStatus.className !==
+                `status-${selectedStatus}`
+            ) {
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+    );
+
+}
+
+
+/*
+ * 카드 생성
  */
 function createParkingCard(parking) {
 
     const name =
-        parking.pkNam || "주차장명 없음";
+        parking.pkNam ||
+        "주차장명 없음";
 
 
     const address =
@@ -157,16 +430,17 @@ function createParkingCard(parking) {
 
 
     const total =
-        parseNumber(parking.pkCnt);
+        parseNumber(
+            parking.pkCnt
+        );
 
 
     const available =
-        parseNumber(parking.currava);
+        parseNumber(
+            parking.currava
+        );
 
 
-    /*
-     * 주차 상태
-     */
     const parkingStatus =
         getParkingStatus(
             total,
@@ -174,9 +448,6 @@ function createParkingCard(parking) {
         );
 
 
-    /*
-     * 데이터 기준일
-     */
     const updateDate =
         parking.fnlDt ||
         "정보 없음";
@@ -281,16 +552,13 @@ function createParkingCard(parking) {
 
 
 /*
- * 주차 상태 계산
+ * 주차 상태
  */
 function getParkingStatus(
     total,
     available
 ) {
 
-    /*
-     * 전체 주차면 정보가 없는 경우
-     */
     if (
         total <= 0 ||
         available < 0
@@ -307,16 +575,10 @@ function getParkingStatus(
     }
 
 
-    /*
-     * 남은 주차면 비율
-     */
     const ratio =
         available / total;
 
 
-    /*
-     * 30% 이상
-     */
     if (ratio >= 0.3) {
 
         return {
@@ -330,9 +592,6 @@ function getParkingStatus(
     }
 
 
-    /*
-     * 10% 이상
-     */
     if (ratio >= 0.1) {
 
         return {
@@ -346,9 +605,6 @@ function getParkingStatus(
     }
 
 
-    /*
-     * 10% 미만
-     */
     return {
 
         text: "혼잡",
@@ -361,7 +617,7 @@ function getParkingStatus(
 
 
 /*
- * 이용률 계산
+ * 이용률
  */
 function getOccupancyRate(
     total,
@@ -379,7 +635,10 @@ function getOccupancyRate(
 
 
     const occupied =
-        total - available;
+        Math.max(
+            0,
+            total - available
+        );
 
 
     const rate =
@@ -419,8 +678,6 @@ function parseNumber(value) {
 function formatNumber(value) {
 
     if (
-        value === null ||
-        value === undefined ||
         !Number.isFinite(value)
     ) {
 
@@ -429,13 +686,15 @@ function formatNumber(value) {
     }
 
 
-    return value.toLocaleString("ko-KR");
+    return value.toLocaleString(
+        "ko-KR"
+    );
 
 }
 
 
 /*
- * HTML 출력 시 XSS 방지
+ * XSS 방지
  */
 function escapeHtml(value) {
 
