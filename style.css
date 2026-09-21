@@ -1,0 +1,149 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans KR",
+        sans-serif;
+
+    background: #f5f7fa;
+    color: #222;
+}
+
+.header {
+    padding: 40px 20px;
+
+    text-align: center;
+
+    background: #2563eb;
+    color: white;
+}
+
+.header h1 {
+    margin: 0 0 10px;
+}
+
+.header p {
+    margin: 0;
+
+    opacity: 0.9;
+}
+
+.container {
+    max-width: 1200px;
+
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+.toolbar {
+    display: flex;
+
+    align-items: center;
+    gap: 15px;
+
+    margin-bottom: 25px;
+}
+
+button {
+    padding: 12px 20px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #2563eb;
+    color: white;
+
+    font-size: 15px;
+
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+button:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+#status {
+    color: #555;
+}
+
+.parking-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(300px, 1fr));
+
+    gap: 16px;
+}
+
+.parking-card {
+    padding: 20px;
+
+    background: white;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.parking-name {
+    margin: 0 0 10px;
+
+    font-size: 20px;
+}
+
+.parking-address {
+    margin-bottom: 15px;
+
+    color: #666;
+}
+
+.parking-info {
+    display: flex;
+
+    justify-content: space-between;
+
+    padding-top: 15px;
+
+    border-top: 1px solid #eee;
+}
+
+.parking-info-item {
+    text-align: center;
+}
+
+.parking-info-label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 13px;
+
+    color: #888;
+}
+
+.parking-info-value {
+    font-size: 20px;
+
+    font-weight: bold;
+}
+
+.empty {
+    padding: 50px;
+
+    text-align: center;
+
+    color: #888;
+}
