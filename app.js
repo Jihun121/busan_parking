@@ -108,7 +108,7 @@ async function loadParking() {
 
         renderParking();
 
-        testParkingMarker();
+        loadParkingMarkers();
 
         status.textContent =
             "조회 성공";
@@ -909,4 +909,272 @@ async function testParkingMarker() {
         );
 
     }
+}
+
+/* ==============================
+   여러 주차장 마커
+============================== */
+
+let parkingMarkers = [];
+
+async function loadParkingMarkers() {
+
+    if (!kakaoMap) {
+        console.log("카카오 지도가 아직 준비되지 않았습니다.");
+        return;
+    }
+
+    if (!parkingData.length) {
+        console.log("주차장 데이터가 없습니다.");
+        return;
+    }
+
+    console.log(
+        `주차장 마커 생성 시작: ${parkingData.length}개`
+    );
+
+    // 기존 마커 제거
+    clearParkingMarkers();
+
+    // 우선 테스트를 위해 최대 30개만 처리
+    const targetParking =
+        parkingData.slice(0, 30);
+
+    const bounds =
+        new kakao.maps.LatLngBounds();
+
+    let successCount = 0;
+
+    for (const parking of targetParking) {
+
+        const roadAddress =
+            String(
+                parking.doroAddr || ""
+            ).trim();
+
+        const jibunAddress =
+            String(
+                parking.jibunAddr || ""
+            ).trim();
+
+        // "-" 또는 빈 주소 제외
+        const validRoadAddress =
+            roadAddress &&
+            roadAddress !== "-";
+
+        const validJibunAddress =
+            jibunAddress &&
+            jibunAddress !== "-";
+
+        const address =
+            validRoadAddress
+                ? roadAddress
+                : validJibunAddress
+                    ? jibunAddress
+                    : "";
+
+        if (!address) {
+
+            console.log(
+                "주소 없음:",
+                parking.pkNam
+            );
+
+            continue;
+        }
+
+        try {
+
+            const response =
+                await fetch(
+                    `/api/geocode?address=${encodeURIComponent(address)}`
+                );
+
+            if (!response.ok) {
+
+                console.log(
+                    "Geocode HTTP 오류:",
+                    response.status,
+                    parking.pkNam
+                );
+
+                continue;
+            }
+
+            const data =
+                await response.json();
+
+            if (
+                !data.documents ||
+                data.documents.length === 0
+            ) {
+
+                console.log(
+                    "좌표 없음:",
+                    parking.pkNam,
+                    address
+                );
+
+                continue;
+            }
+
+            const document =
+                data.documents[0];
+
+            const x =
+                Number(document.x);
+
+            const y =
+                Number(document.y);
+
+            if (
+                !Number.isFinite(x) ||
+                !Number.isFinite(y)
+            ) {
+
+                console.log(
+                    "잘못된 좌표:",
+                    parking.pkNam
+                );
+
+                continue;
+            }
+
+            const position =
+                new kakao.maps.LatLng(
+                    y,
+                    x
+                );
+
+            const marker =
+                new kakao.maps.Marker({
+                    position: position,
+                    map: kakaoMap
+                });
+
+            parkingMarkers.push(marker);
+
+            bounds.extend(position);
+
+            successCount++;
+
+            /*
+             * 마커 클릭 정보
+             */
+            const name =
+                parking.pkNam ||
+                "주차장명 없음";
+
+            const total =
+                parseNumber(
+                    parking.pkCnt
+                );
+
+            const available =
+                parseNumber(
+                    parking.currava
+                );
+
+            const parkingStatus =
+                getParkingStatus(parking);
+
+            const statusText =
+                getParkingStatusText(
+                    parkingStatus
+                );
+
+            const infoWindow =
+                new kakao.maps.InfoWindow({
+                    content: `
+                        <div style="
+                            padding:12px;
+                            font-size:13px;
+                            line-height:1.6;
+                            min-width:180px;
+                        ">
+                            <strong>
+                                ${escapeHtml(name)}
+                            </strong>
+
+                            <br>
+
+                            📍
+                            ${escapeHtml(address)}
+
+                            <br>
+
+                            🅿️
+                            전체 ${formatNumber(total)}면
+
+                            <br>
+
+                            🚗
+                            현재 ${formatNumber(available)}면
+
+                            <br>
+
+                            ${statusText}
+                        </div>
+                    `
+                });
+
+            kakao.maps.event.addListener(
+                marker,
+                "click",
+                () => {
+
+                    infoWindow.open(
+                        kakaoMap,
+                        marker
+                    );
+
+                }
+            );
+
+            console.log(
+                `마커 생성 성공: ${name}`
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "마커 생성 오류:",
+                parking.pkNam,
+                error
+            );
+
+        }
+    }
+
+    /*
+     * 마커가 하나라도 있으면
+     * 전체 마커가 보이도록 지도 이동
+     */
+    if (successCount > 0) {
+
+        kakaoMap.setBounds(
+            bounds
+        );
+
+    }
+
+    console.log(
+        `마커 생성 완료: ${successCount}개`
+    );
+}
+
+
+/*
+ * 기존 마커 제거
+ */
+function clearParkingMarkers() {
+
+    parkingMarkers.forEach(
+        marker => {
+            marker.setMap(null);
+        }
+    );
+
+    parkingMarkers = [];
 }
