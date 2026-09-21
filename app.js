@@ -916,6 +916,101 @@ async function testParkingMarker() {
 ============================== */
 
 let parkingMarkers = [];
+const geocodeCache = new Map();
+
+async function geocodeAddress(address) {
+
+    // 이미 검색한 주소라면 기존 결과 사용
+    if (geocodeCache.has(address)) {
+        return geocodeCache.get(address);
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/geocode?address=${encodeURIComponent(address)}`
+            );
+
+        if (!response.ok) {
+            console.log(
+                "Geocode HTTP 오류:",
+                response.status,
+                address
+            );
+
+            geocodeCache.set(address, null);
+
+            return null;
+        }
+
+        const data =
+            await response.json();
+
+        if (
+            !data.documents ||
+            data.documents.length === 0
+        ) {
+
+            console.log(
+                "좌표 없음:",
+                address
+            );
+
+            geocodeCache.set(address, null);
+
+            return null;
+        }
+
+        const document =
+            data.documents[0];
+
+        const x =
+            Number(document.x);
+
+        const y =
+            Number(document.y);
+
+        if (
+            !Number.isFinite(x) ||
+            !Number.isFinite(y)
+        ) {
+
+            geocodeCache.set(address, null);
+
+            return null;
+        }
+
+        const coordinate = {
+            x,
+            y
+        };
+
+        // 성공한 좌표 저장
+        geocodeCache.set(
+            address,
+            coordinate
+        );
+
+        return coordinate;
+
+    }
+    catch (error) {
+
+        console.error(
+            "Geocode 오류:",
+            address,
+            error
+        );
+
+        geocodeCache.set(
+            address,
+            null
+        );
+
+        return null;
+    }
+}
 
 async function loadParkingMarkers() {
 
@@ -936,9 +1031,8 @@ async function loadParkingMarkers() {
     // 기존 마커 제거
     clearParkingMarkers();
 
-    // 우선 테스트를 위해 최대 30개만 처리
     const targetParking =
-        parkingData.slice(0, 30);
+        parkingData;
 
     const bounds =
         new kakao.maps.LatLngBounds();
@@ -985,32 +1079,13 @@ async function loadParkingMarkers() {
 
         try {
 
-            const response =
-                await fetch(
-                    `/api/geocode?address=${encodeURIComponent(address)}`
-                );
+            const coordinate =
+                await geocodeAddress(address);
 
-            if (!response.ok) {
+            if (!coordinate) {
 
                 console.log(
-                    "Geocode HTTP 오류:",
-                    response.status,
-                    parking.pkNam
-                );
-
-                continue;
-            }
-
-            const data =
-                await response.json();
-
-            if (
-                !data.documents ||
-                data.documents.length === 0
-            ) {
-
-                console.log(
-                    "좌표 없음:",
+                    "좌표 변환 실패:",
                     parking.pkNam,
                     address
                 );
@@ -1018,14 +1093,11 @@ async function loadParkingMarkers() {
                 continue;
             }
 
-            const document =
-                data.documents[0];
-
             const x =
-                Number(document.x);
+                coordinate.x;
 
             const y =
-                Number(document.y);
+                coordinate.y;
 
             if (
                 !Number.isFinite(x) ||
