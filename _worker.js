@@ -10,70 +10,132 @@ export default {
          */
         if (url.pathname === "/api/parking") {
 
-
-            /*
-             * Cloudflare Secret에서
-             * API 인증키를 가져옵니다.
-             */
             const apiKey =
                 env.BUSAN_PARKING_API_KEY;
 
 
             /*
-             * Secret이 설정되어 있는지 확인
+             * Cloudflare Secret 확인
              */
             if (!apiKey) {
 
-                return new Response(
-
-                    JSON.stringify({
+                return jsonResponse(
+                    {
                         success: false,
                         message:
                             "Cloudflare API KEY가 설정되지 않았습니다."
-                    }),
-
-                    {
-                        status: 500,
-
-                        headers: {
-                            "Content-Type":
-                                "application/json; charset=UTF-8"
-                        }
-                    }
-
+                    },
+                    500
                 );
 
             }
 
 
-            /*
-             * --------------------------------
-             * 부산 공공데이터 API 호출
-             * --------------------------------
-             *
-             * API 명세 확인 후 이 부분을
-             * 실제 요청 코드로 변경합니다.
-             */
+            try {
+
+                /*
+                 * 부산광역시 공영주차장 API
+                 */
+                const apiUrl =
+                    new URL(
+                        "https://apis.data.go.kr/6260000/BusanPblcPrkngInfoService/getPblcPrkngInfo"
+                    );
 
 
-            return new Response(
+                /*
+                 * API 요청 파라미터
+                 */
+                apiUrl.searchParams.set(
+                    "ServiceKey",
+                    apiKey
+                );
 
-                JSON.stringify({
-                    success: true,
-                    message:
-                        "Cloudflare Worker 및 API KEY 연결 성공"
-                }),
+                apiUrl.searchParams.set(
+                    "pageNo",
+                    "1"
+                );
 
-                {
-                    status: 200,
+                apiUrl.searchParams.set(
+                    "numOfRows",
+                    "1000"
+                );
 
-                    headers: {
-                        "Content-Type":
-                            "application/json; charset=UTF-8"
-                    }
+                apiUrl.searchParams.set(
+                    "resultType",
+                    "json"
+                );
+
+
+                /*
+                 * 부산 API 호출
+                 */
+                const response =
+                    await fetch(apiUrl.toString());
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Busan API Response:",
+                    data
+                );
+
+
+                /*
+                 * 부산 API 자체 오류 확인
+                 */
+                if (!response.ok) {
+
+                    return jsonResponse(
+                        {
+                            success: false,
+                            message:
+                                "부산 공공데이터 API 호출 실패",
+                            status:
+                                response.status,
+                            data
+                        },
+                        502
+                    );
+
                 }
 
-            );
+
+                /*
+                 * 부산 API 응답 그대로 전달
+                 *
+                 * 다음 단계에서
+                 * 우리가 사용하기 편한 형태로
+                 * 변환할 예정입니다.
+                 */
+                return jsonResponse(
+                    data,
+                    200
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Busan Parking API Error:",
+                    error
+                );
+
+
+                return jsonResponse(
+                    {
+                        success: false,
+                        message:
+                            "부산 공영주차장 API 호출 중 오류가 발생했습니다.",
+                        error:
+                            error.message
+                    },
+                    500
+                );
+
+            }
 
         }
 
@@ -81,10 +143,36 @@ export default {
         /*
          * API가 아닌 요청
          *
-         * 정적 파일 처리
+         * index.html
+         * style.css
+         * app.js
+         * 등의 정적 파일 처리
          */
         return env.ASSETS.fetch(request);
 
     }
 
 };
+
+
+/*
+ * JSON 응답 함수
+ */
+function jsonResponse(data, status = 200) {
+
+    return new Response(
+        JSON.stringify(data),
+        {
+            status,
+
+            headers: {
+                "Content-Type":
+                    "application/json; charset=UTF-8",
+
+                "Cache-Control":
+                    "no-store"
+            }
+        }
+    );
+
+}

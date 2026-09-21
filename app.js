@@ -1,23 +1,33 @@
-const loadButton = document.getElementById("loadButton");
-const status = document.getElementById("status");
-const parkingList = document.getElementById("parkingList");
+const loadButton =
+    document.getElementById("loadButton");
+
+const status =
+    document.getElementById("status");
+
+const parkingList =
+    document.getElementById("parkingList");
 
 
-loadButton.addEventListener("click", loadParking);
+loadButton.addEventListener(
+    "click",
+    loadParking
+);
 
 
 async function loadParking() {
 
     loadButton.disabled = true;
 
-    status.textContent = "주차장 정보를 불러오는 중...";
+    status.textContent =
+        "주차장 정보를 불러오는 중...";
 
     parkingList.innerHTML = "";
 
 
     try {
 
-        const response = await fetch("/api/parking");
+        const response =
+            await fetch("/api/parking");
 
 
         if (!response.ok) {
@@ -29,31 +39,42 @@ async function loadParking() {
         }
 
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
 
-        console.log("API Response:", data);
+        console.log(
+            "부산 공영주차장 API Response:",
+            data
+        );
+
+
+        status.textContent =
+            `조회 성공`;
 
 
         /*
-         * 현재는 API 응답 구조를
-         * 확인하기 위한 단계입니다.
-         *
-         * 실제 부산 API 구조를 확인한 뒤
-         * 아래 renderParkingList()를 완성합니다.
+         * 일단 실제 API 응답을
+         * 브라우저 화면에 표시
          */
-
-
-        status.textContent = "조회 성공";
-
-
         parkingList.innerHTML = `
+
             <div class="empty">
-                API 연결 성공
+
+                부산 공영주차장 API 연결 성공
+
+                <br><br>
+
+                전체 데이터:
+                ${data.response?.body?.totalCount ?? "확인 필요"}
+
                 <br>
-                브라우저 개발자 도구의 Console에서
-                응답 데이터를 확인하세요.
+
+                브라우저 개발자 도구
+                Console에서 API 응답을 확인하세요.
+
             </div>
+
         `;
 
 
@@ -68,11 +89,19 @@ async function loadParking() {
 
 
         parkingList.innerHTML = `
+
             <div class="empty">
+
                 데이터를 불러오지 못했습니다.
-                <br>
-                ${escapeHtml(error.message)}
+
+                <br><br>
+
+                ${escapeHtml(
+            error.message
+        )}
+
             </div>
+
         `;
 
     }
@@ -81,12 +110,12 @@ async function loadParking() {
         loadButton.disabled = false;
 
     }
+
 }
 
 
 /*
- * HTML에 데이터를 출력할 때
- * XSS 공격을 방지하기 위한 함수입니다.
+ * XSS 방지
  */
 function escapeHtml(value) {
 
